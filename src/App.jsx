@@ -1,17 +1,22 @@
+import React from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import RegistrationForm from './components/RegistrationForm';
-// import PrivateRoute from './pages/PrivateRoute';
-// import Dashboard from './pages/Dashboard';
-// import Login from './pages/Login';
+import Login from './pages/Login';
+// import Dashboard from './pages/Dashboard'; // подключим позже
+// import PrivateRoute from './pages/PrivateRoute'; // подключим позже
 
 function App() {
   return (
     <Router>
       <Routes>
         <Route path="/register" element={<RegistrationForm />} />
-        {/* <Route path="/login" element={<Login />} /> */}
-        {/* <Route path="/dashboard" element={<PrivateRoute><Dashboard /></PrivateRoute>} /> */}
-        <Route path="*" element={<div>404 — Страница не найдена</div>} />
+        <Route path="/login" element={<Login />} />
+        {/* <Route path="/dashboard" element={
+          <PrivateRoute>
+            <Dashboard />
+          </PrivateRoute>
+        } /> */}
+        <Route path="*" element={<div className="text-center mt-10 text-xl">404 — Страница не найдена</div>} />
       </Routes>
     </Router>
   );
