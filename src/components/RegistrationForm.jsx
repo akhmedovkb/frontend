@@ -22,7 +22,7 @@ export default function RegistrationForm() {
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4 p-4 max-w-xl mx-auto">
+    <form onSubmit={handleSubmit} className="space-y-4 p-4 max-w-xl mx-auto" autocomplete="off">
       <select name="type" onChange={handleChange} required>
         <option value="">Выберите тип</option>
         <option value="guide">Гид</option>
