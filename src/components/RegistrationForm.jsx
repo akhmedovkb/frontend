@@ -1,4 +1,3 @@
-// src/components/RegistrationForm.jsx
 import React, { useState } from 'react';
 
 const languagesList = [
@@ -16,33 +15,48 @@ function RegistrationForm() {
     contactPerson: '',
     email: '',
     phone: '',
-    languages: [],
     password: '',
-    description: ''
+    description: '',
+    languages: [],
+    images: null,
   });
 
   const handleChange = (e) => {
-    const { name, value } = e.target;
-    setFormData({ ...formData, [name]: value });
+    const { name, value, files } = e.target;
+    if (name === 'images') {
+      setFormData({ ...formData, images: files });
+    } else {
+      setFormData({ ...formData, [name]: value });
+    }
   };
 
   const handleLanguageChange = (e) => {
-    const options = Array.from(e.target.selectedOptions);
-    const selected = options.map((o) => o.value);
+    const selected = Array.from(e.target.selectedOptions).map(o => o.value);
     setFormData({ ...formData, languages: selected });
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+
+    const data = new FormData();
+    Object.entries(formData).forEach(([key, value]) => {
+      if (key === 'images') {
+        Array.from(value || []).forEach(file => data.append('images', file));
+      } else if (key === 'languages') {
+        value.forEach(lang => data.append('languages', lang));
+      } else {
+        data.append(key, value);
+      }
+    });
+
     try {
       const res = await fetch('https://travella-production.up.railway.app/api/providers/register', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(formData),
+        body: data,
       });
 
-      const data = await res.json();
-      alert(data.message || data.error || 'Что-то пошло не так');
+      const result = await res.json();
+      alert(result.message || result.error || 'Что-то пошло не так');
     } catch (err) {
       console.error(err);
       alert('Ошибка при отправке');
@@ -70,7 +84,9 @@ function RegistrationForm() {
       <input name="email" type="email" value={formData.email} onChange={handleChange} placeholder="Email" className="w-full p-2 border rounded" required />
       <input name="phone" value={formData.phone} onChange={handleChange} placeholder="Номер телефона" className="w-full p-2 border rounded" required />
 
-      <select multiple name="languages" onChange={handleLanguageChange} className="w-full p-2 border rounded h-40">
+      {/* 💬 Языки */}
+      <label className="block font-semibold">Языки:</label>
+      <select multiple name="languages" value={formData.languages} onChange={handleLanguageChange} className="w-full p-2 border rounded h-40">
         {languagesList.map(lang => (
           <option key={lang} value={lang}>{lang}</option>
         ))}
@@ -78,6 +94,10 @@ function RegistrationForm() {
 
       <input name="password" type="password" value={formData.password} onChange={handleChange} placeholder="Пароль" className="w-full p-2 border rounded" required />
       <textarea name="description" value={formData.description} onChange={handleChange} placeholder="Описание" className="w-full p-2 border rounded" rows="4" />
+
+      {/* 📷 Файлы */}
+      <label className="block font-semibold">Фотографии:</label>
+      <input name="images" type="file" accept=".jpg,.jpeg,.png" onChange={handleChange} multiple className="w-full p-2 border rounded" />
 
       <button type="submit" className="bg-blue-500 text-white px-4 py-2 rounded">Зарегистрироваться</button>
     </form>
