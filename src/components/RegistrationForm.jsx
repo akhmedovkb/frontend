@@ -1,4 +1,3 @@
-// ✅ src/components/RegistrationForm.jsx
 import React, { useState } from 'react';
 
 const languagesList = [
@@ -19,38 +18,47 @@ function RegistrationForm() {
     languages: [],
     password: '',
     description: '',
-    images: []
+    images: [] // base64 изображений
   });
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setFormData({ ...formData, [name]: value });
+    setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
   const handleLanguageChange = (e) => {
     const options = Array.from(e.target.selectedOptions);
-    const selected = options.map((o) => o.value);
-    setFormData({ ...formData, languages: selected });
+    setFormData((prev) => ({
+      ...prev,
+      languages: options.map((opt) => opt.value)
+    }));
   };
 
-  const handleImageChange = (e) => {
+  const handleImagesChange = (e) => {
     const files = Array.from(e.target.files);
 
-    const toBase64 = (file) =>
-      new Promise((resolve, reject) => {
+    Promise.all(
+      files.map(file => new Promise((resolve, reject) => {
         const reader = new FileReader();
-        reader.readAsDataURL(file);
         reader.onload = () => resolve(reader.result);
-        reader.onerror = reject;
-      });
-
-    Promise.all(files.map(toBase64)).then((base64Images) => {
-      setFormData({ ...formData, images: base64Images });
+        reader.onerror = (err) => reject(err);
+        reader.readAsDataURL(file);
+      }))
+    )
+    .then(base64Images => {
+      setFormData(prev => ({
+        ...prev,
+        images: base64Images
+      }));
+    })
+    .catch(err => {
+      console.error('Ошибка при чтении файлов:', err);
     });
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+
     try {
       const res = await fetch('https://travella-production.up.railway.app/api/providers/register', {
         method: 'POST',
@@ -87,22 +95,17 @@ function RegistrationForm() {
       <input name="email" type="email" value={formData.email} onChange={handleChange} placeholder="Email" className="w-full p-2 border rounded" required />
       <input name="phone" value={formData.phone} onChange={handleChange} placeholder="Номер телефона" className="w-full p-2 border rounded" required />
 
-      <select multiple name="languages" onChange={handleLanguageChange} className="w-full p-2 border rounded h-40">
+      <select multiple name="languages" onChange={handleLanguageChange} className="w-full p-2 border rounded h-40" value={formData.languages}>
         {languagesList.map(lang => (
           <option key={lang} value={lang}>{lang}</option>
         ))}
       </select>
 
-      <input name="password" type="password" value={formData.password} onChange={handleChange} placeholder="Пароль" className="w-full p-2 border rounded" required />
-      <textarea name="description" value={formData.description} onChange={handleChange} placeholder="Описание" className="w-full p-2 border rounded" rows="4" />
+      <input type="file" multiple accept="image/jpeg,image/png" onChange={handleImagesChange} />
 
-      <input
-        type="file"
-        accept="image/*"
-        multiple
-        onChange={handleImageChange}
-        className="w-full p-2 border rounded"
-      />
+      <input name="password" type="password" value={formData.password} onChange={handleChange} placeholder="Пароль" className="w-full p-2 border rounded" required />
+
+      <textarea name="description" value={formData.description} onChange={handleChange} placeholder="Описание" className="w-full p-2 border rounded" rows="4" />
 
       <button type="submit" className="bg-blue-500 text-white px-4 py-2 rounded">Зарегистрироваться</button>
     </form>
