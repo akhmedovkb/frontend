@@ -1,3 +1,4 @@
+// ✅ src/components/RegistrationForm.jsx
 import React, { useState } from 'react';
 
 const languagesList = [
@@ -18,34 +19,33 @@ function RegistrationForm() {
     languages: [],
     password: '',
     description: '',
-    images: [] // тут будут base64 строки
+    images: []
   });
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setFormData((prev) => ({ ...prev, [name]: value }));
+    setFormData({ ...formData, [name]: value });
   };
 
   const handleLanguageChange = (e) => {
-    const selected = Array.from(e.target.selectedOptions).map((o) => o.value);
-    setFormData((prev) => ({ ...prev, languages: selected }));
+    const options = Array.from(e.target.selectedOptions);
+    const selected = options.map((o) => o.value);
+    setFormData({ ...formData, languages: selected });
   };
 
-  const handleImageUpload = (e) => {
+  const handleImageChange = (e) => {
     const files = Array.from(e.target.files);
-    const readers = files.map(file => {
-      return new Promise((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onloadend = () => resolve(reader.result);
-        reader.onerror = reject;
-        reader.readAsDataURL(file);
-      });
-    });
 
-    Promise.all(readers).then(base64Images => {
-      setFormData((prev) => ({ ...prev, images: base64Images }));
-    }).catch(() => {
-      alert('Ошибка при чтении изображений');
+    const toBase64 = (file) =>
+      new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.readAsDataURL(file);
+        reader.onload = () => resolve(reader.result);
+        reader.onerror = reject;
+      });
+
+    Promise.all(files.map(toBase64)).then((base64Images) => {
+      setFormData({ ...formData, images: base64Images });
     });
   };
 
@@ -71,7 +71,7 @@ function RegistrationForm() {
       <h2 className="text-xl font-bold">Регистрация поставщика</h2>
 
       <select name="type" value={formData.type} onChange={handleChange} required className="w-full p-2 border rounded">
-        <option value="">Тип поставщика</option>
+        <option value="">Выберите тип поставщика</option>
         <option value="гостиница">Гостиница</option>
         <option value="гид">Гид</option>
         <option value="транспорт">Транспорт</option>
@@ -98,9 +98,9 @@ function RegistrationForm() {
 
       <input
         type="file"
-        multiple
         accept="image/*"
-        onChange={handleImageUpload}
+        multiple
+        onChange={handleImageChange}
         className="w-full p-2 border rounded"
       />
 
