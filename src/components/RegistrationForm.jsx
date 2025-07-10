@@ -1,8 +1,9 @@
+import { useState } from 'react';
+
 function RegistrationForm() {
   const [formData, setFormData] = useState({
     email: '',
     password: '',
-    // другие поля
   });
 
   const handleSubmit = async (e) => {
@@ -23,10 +24,19 @@ function RegistrationForm() {
   };
 
   return (
-    <form onSubmit={handleSubmit}>
-      {/* твоя форма */}
-    </form>
-  );
-}
-
-export default RegistrationForm;
+    <form onSubmit={handleSubmit} className="max-w-md mx-auto mt-10 space-y-4">
+      <h2 className="text-xl font-bold">Регистрация поставщика</h2>
+      <input
+        type="email"
+        name="email"
+        placeholder="Email"
+        className="w-full p-2 border rounded"
+        value={formData.email}
+        onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+        required
+      />
+      <input
+        type="password"
+        name="password"
+        placeholder="Пароль"
+        className="w-full p-2 borde
