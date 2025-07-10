@@ -10,3 +10,14 @@ function App() {
 }
 
 export default App;
+
+// src/App.jsx
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import Login from './modules/auth/Login';
+
+<Router>
+  <Routes>
+    <Route path="/login" element={<Login />} />
+    {/* другие маршруты */}
+  </Routes>
+</Router>
