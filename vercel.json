@@ -1,5 +1,3 @@
-// trigger rebuild
-
 {
   "rewrites": [
     { "source": "/(.*)", "destination": "/" }
