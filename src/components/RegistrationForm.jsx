@@ -1,18 +1,14 @@
 import React, { useState } from 'react';
 
 const allLanguages = [
-  "Английский", "Русский", "Узбекский", "Казахский", "Таджикский",
-  "Французский", "Немецкий", "Испанский", "Итальянский", "Португальский",
-  "Турецкий", "Китайский", "Японский", "Корейский", "Арабский",
-  "Хинди", "Бенгальский", "Персидский", "Пушту", "Иврит",
-  "Греческий", "Польский", "Чешский", "Словацкий", "Румынский",
-  "Сербский", "Хорватский", "Болгарский", "Украинский", "Белорусский",
-  "Азербайджанский", "Грузинский", "Армянский", "Вьетнамский", "Индонезийский",
-  "Малайский", "Тайский", "Лаосский", "Бирманский", "Монгольский"
-];
-
-const providerTypes = [
-  "Гостиница", "Гид", "Транспорт", "Питание", "Мероприятие/Событие", "Экскурсия", "Достопримечательность"
+  "Азербайджанский", "Английский", "Арабский", "Армянский", "Белорусский",
+  "Бенгальский", "Бирманский", "Болгарский", "Вьетнамский", "Греческий",
+  "Грузинский", "Иврит", "Индонезийский", "Испанский", "Итальянский",
+  "Казахский", "Китайский", "Корейский", "Лаосский", "Малайский",
+  "Монгольский", "Немецкий", "Персидский", "Польский", "Португальский",
+  "Пушту", "Румынский", "Русский", "Сербский", "Словацкий",
+  "Таджикский", "Тайский", "Турецкий", "Узбекский", "Украинский",
+  "Французский", "Хинди", "Хорватский", "Чешский", "Японский"
 ];
 
 function RegistrationForm() {
@@ -20,44 +16,35 @@ function RegistrationForm() {
     type: '',
     name: '',
     location: '',
-    contactName: '',
+    contactPerson: '',
     email: '',
     phone: '',
-    password: '',
-    description: '',
     languages: [],
-    images: [],
+    password: '',
+    description: ''
   });
 
-  const handleFileChange = (e) => {
-    setFormData({ ...formData, images: Array.from(e.target.files) });
-  };
-
-  const handleLanguageChange = (e) => {
-    const selected = Array.from(e.target.selectedOptions).map(opt => opt.value);
-    setFormData({ ...formData, languages: selected });
+  const handleChange = (e) => {
+    const { name, value, type } = e.target;
+    if (type === 'select-multiple') {
+      const selected = Array.from(e.target.selectedOptions).map(opt => opt.value);
+      setFormData({ ...formData, [name]: selected });
+    } else {
+      setFormData({ ...formData, [name]: value });
+    }
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    const data = new FormData();
-    for (const key in formData) {
-      if (key === 'images') {
-        formData.images.forEach((file) => data.append('images', file));
-      } else if (key === 'languages') {
-        formData.languages.forEach((lang) => data.append('languages', lang));
-      } else {
-        data.append(key, formData[key]);
-      }
-    }
-
     try {
       const res = await fetch('https://travella-production.up.railway.app/api/providers/register', {
         method: 'POST',
-        body: data,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(formData),
       });
-      const result = await res.json();
-      alert(result.message || result.error || 'Успешно!');
+
+      const data = await res.json();
+      alert(data.message || data.error || 'Что-то пошло не так');
     } catch (err) {
       console.error(err);
       alert('Ошибка при отправке');
@@ -65,110 +52,41 @@ function RegistrationForm() {
   };
 
   return (
-    <form onSubmit={handleSubmit} className="max-w-xl mx-auto mt-10 space-y-4">
-      <h2 className="text-2xl font-bold">Регистрация поставщика</h2>
+    <form onSubmit={handleSubmit} className="max-w-xl mx-auto mt-10 space-y-4 p-4 border rounded">
+      <h2 className="text-xl font-bold">Регистрация поставщика</h2>
 
-      <select
-        required
-        value={formData.type}
-        onChange={(e) => setFormData({ ...formData, type: e.target.value })}
-        className="w-full p-2 border rounded"
-      >
-        <option value="">Тип поставщика</option>
-        {providerTypes.map((type) => (
-          <option key={type} value={type}>{type}</option>
-        ))}
+      <select name="type" required onChange={handleChange} className="w-full p-2 border rounded">
+        <option value="">Выберите тип поставщика</option>
+        <option value="гостиница">Гостиница</option>
+        <option value="гид">Гид</option>
+        <option value="транспорт">Транспорт</option>
+        <option value="питание">Питание</option>
+        <option value="мероприятие">Мероприятие / Событие</option>
+        <option value="экскурсия">Экскурсия</option>
+        <option value="достопримечательность">Достопримечательность</option>
       </select>
 
-      <input
-        type="text"
-        placeholder="Название"
-        value={formData.name}
-        onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-        className="w-full p-2 border rounded"
-        required
-      />
+      <input type="text" name="name" placeholder="Название" onChange={handleChange} required className="w-full p-2 border rounded" />
+      <input type="text" name="location" placeholder="Локация" onChange={handleChange} required className="w-full p-2 border rounded" />
+      <input type="text" name="contactPerson" placeholder="Контактное лицо (ФИО)" onChange={handleChange} required className="w-full p-2 border rounded" />
+      <input type="email" name="email" placeholder="Email" onChange={handleChange} required className="w-full p-2 border rounded" />
+      <input type="tel" name="phone" placeholder="Номер телефона" onChange={handleChange} required className="w-full p-2 border rounded" />
 
-      <input
-        type="text"
-        placeholder="Локация"
-        value={formData.location}
-        onChange={(e) => setFormData({ ...formData, location: e.target.value })}
-        className="w-full p-2 border rounded"
-        required
-      />
-
-      <input
-        type="text"
-        placeholder="Контактное лицо (ФИО)"
-        value={formData.contactName}
-        onChange={(e) => setFormData({ ...formData, contactName: e.target.value })}
-        className="w-full p-2 border rounded"
-        required
-      />
-
-      <input
-        type="email"
-        placeholder="Email"
-        value={formData.email}
-        onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-        className="w-full p-2 border rounded"
-        required
-      />
-
-      <input
-        type="tel"
-        placeholder="Телефон"
-        value={formData.phone}
-        onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-        className="w-full p-2 border rounded"
-        required
-      />
-
-      <input
-        type="password"
-        placeholder="Пароль"
-        value={formData.password}
-        onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-        className="w-full p-2 border rounded"
-        required
-      />
-
-      <textarea
-        placeholder="Описание"
-        value={formData.description}
-        onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-        className="w-full p-2 border rounded"
-        rows={4}
-        required
-      />
-
-      <label className="block font-medium">Языки</label>
       <select
+        name="languages"
         multiple
-        value={formData.languages}
-        onChange={handleLanguageChange}
+        onChange={handleChange}
         className="w-full p-2 border rounded h-40"
       >
-        {allLanguages.map((lang) => (
-          <option key={lang} value={lang}>
-            {lang}
-          </option>
+        {allLanguages.map(lang => (
+          <option key={lang} value={lang}>{lang}</option>
         ))}
       </select>
 
-      <label className="block font-medium">Фото / изображения</label>
-      <input
-        type="file"
-        accept="image/*"
-        multiple
-        onChange={handleFileChange}
-        className="w-full p-2 border rounded"
-      />
+      <input type="password" name="password" placeholder="Пароль" onChange={handleChange} required className="w-full p-2 border rounded" />
+      <textarea name="description" placeholder="Описание" onChange={handleChange} required className="w-full p-2 border rounded" />
 
-      <button type="submit" className="bg-blue-600 text-white px-4 py-2 rounded">
-        Зарегистрироваться
-      </button>
+      <button type="submit" className="bg-blue-600 text-white px-4 py-2 rounded">Зарегистрироваться</button>
     </form>
   );
 }
