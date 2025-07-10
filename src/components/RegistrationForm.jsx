@@ -1,60 +1,76 @@
 import React, { useState } from 'react';
 
+const providerTypes = [
+  'Гостиница',
+  'Гид',
+  'Транспорт',
+  'Питание',
+  'Мероприятие/Событие',
+  'Экскурсия',
+  'Достопримечательность',
+];
+
+const languages = [
+  'Русский',
+  'Узбекский',
+  'Английский',
+  'Немецкий',
+  'Французский',
+];
+
 function RegistrationForm() {
   const [formData, setFormData] = useState({
     type: '',
     name: '',
     location: '',
-    contactPerson: '',
+    contactName: '',
     email: '',
     phone: '',
+    images: [],
     languages: [],
     password: '',
     description: '',
   });
-  const [images, setImages] = useState([]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setFormData((prev) => ({
-      ...prev,
-      [name]: value,
-    }));
+    setFormData({ ...formData, [name]: value });
   };
 
   const handleLanguagesChange = (e) => {
-    const selected = Array.from(e.target.selectedOptions).map((opt) => opt.value);
-    setFormData((prev) => ({ ...prev, languages: selected }));
+    const { options } = e.target;
+    const selected = [];
+    for (const option of options) {
+      if (option.selected) selected.push(option.value);
+    }
+    setFormData({ ...formData, languages: selected });
   };
 
-  const handleImageChange = (e) => {
-    setImages(Array.from(e.target.files));
+  const handleFileChange = (e) => {
+    setFormData({ ...formData, images: Array.from(e.target.files) });
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    const body = new FormData();
+    const data = new FormData();
     for (const key in formData) {
-      if (Array.isArray(formData[key])) {
-        formData[key].forEach((val) => body.append(`${key}[]`, val));
+      if (key === 'images') {
+        formData.images.forEach((file) => data.append('images', file));
+      } else if (Array.isArray(formData[key])) {
+        data.append(key, JSON.stringify(formData[key]));
       } else {
-        body.append(key, formData[key]);
+        data.append(key, formData[key]);
       }
     }
-
-    images.forEach((file) => {
-      body.append('images', file);
-    });
 
     try {
       const res = await fetch('https://travella-production.up.railway.app/api/providers/register', {
         method: 'POST',
-        body,
+        body: data,
       });
-
-      const data = await res.json();
-      alert(data.message || data.error || 'Успешно!');
+      const result = await res.json();
+      alert(result.message || result.error || 'Успешно отправлено');
     } catch (err) {
       console.error(err);
       alert('Ошибка при отправке');
@@ -62,48 +78,34 @@ function RegistrationForm() {
   };
 
   return (
-    <form onSubmit={handleSubmit} className="max-w-xl mx-auto p-4 space-y-4">
-      <h2 className="text-2xl font-bold">Регистрация поставщика</h2>
+    <form onSubmit={handleSubmit} className="space-y-4 max-w-xl mx-auto p-4">
+      <h2 className="text-xl font-bold">Регистрация поставщика</h2>
 
-      <select name="type" value={formData.type} onChange={handleChange} required className="w-full p-2 border rounded">
-        <option value="">Выберите тип</option>
-        <option value="hotel">Гостиница</option>
-        <option value="guide">Гид</option>
-        <option value="transport">Транспорт</option>
-        <option value="food">Питание</option>
-        <option value="event">Мероприятие</option>
-        <option value="tour">Экскурсия</option>
-        <option value="attraction">Достопримечательность</option>
+      <select name="type" onChange={handleChange} required className="w-full p-2 border rounded">
+        <option value="">Выберите тип поставщика</option>
+        {providerTypes.map((type) => (
+          <option key={type} value={type}>{type}</option>
+        ))}
       </select>
 
-      <input name="name" placeholder="Название" value={formData.name} onChange={handleChange} required className="w-full p-2 border rounded" />
-      <input name="location" placeholder="Локация" value={formData.location} onChange={handleChange} required className="w-full p-2 border rounded" />
-      <input name="contactPerson" placeholder="Контактное лицо" value={formData.contactPerson} onChange={handleChange} required className="w-full p-2 border rounded" />
-      <input name="email" type="email" placeholder="Email" value={formData.email} onChange={handleChange} required className="w-full p-2 border rounded" />
-      <input name="phone" type="tel" placeholder="Телефон" value={formData.phone} onChange={handleChange} required className="w-full p-2 border rounded" />
-      
-      <label className="block">
-        Фото (можно несколько):
-        <input type="file" multiple accept="image/*" onChange={handleImageChange} className="mt-2" />
-      </label>
+      <input name="name" placeholder="Название" onChange={handleChange} required className="w-full p-2 border rounded" />
+      <input name="location" placeholder="Локация" onChange={handleChange} required className="w-full p-2 border rounded" />
+      <input name="contactName" placeholder="Контактное лицо (ФИО)" onChange={handleChange} required className="w-full p-2 border rounded" />
+      <input name="email" type="email" placeholder="Email" onChange={handleChange} required className="w-full p-2 border rounded" />
+      <input name="phone" placeholder="Номер телефона" onChange={handleChange} required className="w-full p-2 border rounded" />
 
-      <label className="block">
-        Языки:
-        <select multiple value={formData.languages} onChange={handleLanguagesChange} className="w-full p-2 border rounded mt-2">
-          <option value="ru">Русский</option>
-          <option value="uz">Узбекский</option>
-          <option value="en">Английский</option>
-          <option value="de">Немецкий</option>
-          <option value="fr">Французский</option>
-          <option value="fr">Китайский</option>
-        </select>
-      </label>
+      <input name="images" type="file" accept="image/*" multiple onChange={handleFileChange} className="w-full" />
 
-      <input name="password" type="password" placeholder="Пароль" value={formData.password} onChange={handleChange} required className="w-full p-2 border rounded" />
+      <select name="languages" multiple onChange={handleLanguagesChange} className="w-full p-2 border rounded">
+        {languages.map((lang) => (
+          <option key={lang} value={lang}>{lang}</option>
+        ))}
+      </select>
 
-      <textarea name="description" placeholder="Описание" value={formData.description} onChange={handleChange} className="w-full p-2 border rounded" rows={4} />
+      <input name="password" type="password" placeholder="Пароль" onChange={handleChange} required className="w-full p-2 border rounded" />
+      <textarea name="description" placeholder="Описание" onChange={handleChange} className="w-full p-2 border rounded" rows="4" />
 
-      <button type="submit" className="bg-blue-600 text-white px-4 py-2 rounded">Зарегистрироваться</button>
+      <button type="submit" className="bg-blue-600 text-white py-2 px-4 rounded hover:bg-blue-700">Зарегистрироваться</button>
     </form>
   );
 }
