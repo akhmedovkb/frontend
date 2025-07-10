@@ -39,4 +39,5 @@ function RegistrationForm() {
         type="password"
         name="password"
         placeholder="Пароль"
-        className="w-full p-2 borde
+        className="w-full p-2 border rounded"
+        value={formD
