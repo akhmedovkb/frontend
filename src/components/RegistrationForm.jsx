@@ -18,7 +18,7 @@ function RegistrationForm() {
     languages: [],
     password: '',
     description: '',
-    images: [] // base64 изображений
+    images: [] // base64 изображения
   });
 
   const handleChange = (e) => {
@@ -58,6 +58,8 @@ function RegistrationForm() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+
+    console.log('Отправляемые данные:', formData); // 👈 Добавлено
 
     try {
       const res = await fetch('https://travella-production.up.railway.app/api/providers/register', {
