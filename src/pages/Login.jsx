@@ -1,64 +1,69 @@
-import React, { useState } from 'react';
+// src/pages/Login.jsx (для поставщика)
+import React, { useState } from "react";
+import { useNavigate } from "react-router-dom";
 
-function Login() {
-  const [formData, setFormData] = useState({ email: '', password: '' });
-  const [error, setError] = useState('');
-
-  const handleChange = (e) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
-  };
+const Login = () => {
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const navigate = useNavigate();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setError('');
-
     try {
-      const res = await fetch('https://travella-production.up.railway.app/api/providers/login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(formData),
-      });
+      const response = await fetch(
+        "https://travella-production.up.railway.app/api/providers/login",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ email, password }),
+        }
+      );
 
-      const data = await res.json();
-
-      if (res.ok) {
-        localStorage.setItem('token', data.token);
-        alert('Успешный вход!');
-        window.location.href = '/dashboard';
+      const data = await response.json();
+      if (response.ok) {
+        localStorage.setItem("token", data.token);
+        console.log("Успешный вход, токен:", data.token);
+        navigate("/dashboard");
       } else {
-        setError(data.error || 'Ошибка авторизации');
+        alert(data.error || "Ошибка входа");
       }
-    } catch (err) {
-      console.error(err);
-      setError('Ошибка при соединении с сервером');
+    } catch (error) {
+      console.error("Ошибка при входе:", error);
+      alert("Сервер не отвечает");
     }
   };
 
   return (
-    <form onSubmit={handleSubmit} className="max-w-md mx-auto mt-10 space-y-4">
-      <h2 className="text-xl font-bold">Вход для поставщика</h2>
-      <input
-        type="email"
-        name="email"
-        placeholder="Email"
-        className="w-full p-2 border rounded"
-        value={formData.email}
-        onChange={handleChange}
-        required
-      />
-      <input
-        type="password"
-        name="password"
-        placeholder="Пароль"
-        className="w-full p-2 border rounded"
-        value={formData.password}
-        onChange={handleChange}
-        required
-      />
-      {error && <p className="text-red-500">{error}</p>}
-      <button type="submit" className="bg-blue-500 text-white px-4 py-2 rounded">Войти</button>
-    </form>
+    <div className="max-w-md mx-auto bg-white p-6 rounded-xl shadow mt-10">
+      <h2 className="text-2xl font-bold mb-4">Вход поставщика</h2>
+      <form onSubmit={handleSubmit} className="space-y-4">
+        <input
+          type="email"
+          placeholder="Email"
+          className="w-full p-3 border rounded-xl"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          required
+        />
+        <input
+          type="password"
+          placeholder="Пароль"
+          className="w-full p-3 border rounded-xl"
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+          required
+        />
+        <button
+          type="submit"
+          className="w-full bg-primary text-white py-3 rounded-xl hover:bg-secondary transition"
+        >
+          Войти
+        </button>
+      </form>
+    </div>
   );
-}
+};
 
 export default Login;
