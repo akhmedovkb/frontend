@@ -1,48 +1,68 @@
-import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import api from '../../api/axios';
+// src/pages/Login.jsx (для поставщика)
+import React, { useState } from "react";
+import { useNavigate } from "react-router-dom";
 
 const Login = () => {
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [error, setError] = useState('');
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const navigate = useNavigate();
 
-  const handleLogin = async (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      const res = await api.post('/api/providers/login', { email, password });
-      localStorage.setItem('token', res.data.token);
-      navigate('/dashboard');
-    } catch (err) {
-      setError(err.response?.data?.message || 'Ошибка входа');
+      const response = await fetch(
+        "https://travella-production.up.railway.app/api/providers/login",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ email, password }),
+        }
+      );
+
+      const data = await response.json();
+      if (response.ok) {
+        localStorage.setItem("token", data.token);
+        console.log("Успешный вход, токен:", data.token);
+        navigate("/dashboard");
+      } else {
+        alert(data.error || "Ошибка входа");
+      }
+    } catch (error) {
+      console.error("Ошибка при входе:", error);
+      alert("Сервер не отвечает");
     }
   };
 
   return (
-    <form onSubmit={handleLogin} className="max-w-md mx-auto mt-10 space-y-4">
-      <h2 className="text-xl font-bold">Вход для поставщиков</h2>
-      {error && <p className="text-red-500">{error}</p>}
-      <input
-        type="email"
-        placeholder="Email"
-        className="w-full p-2 border rounded"
-        value={email}
-        onChange={(e) => setEmail(e.target.value)}
-        required
-      />
-      <input
-        type="password"
-        placeholder="Пароль"
-        className="w-full p-2 border rounded"
-        value={password}
-        onChange={(e) => setPassword(e.target.value)}
-        required
-      />
-      <button type="submit" className="w-full bg-blue-600 text-white py-2 rounded">
-        Войти
-      </button>
-    </form>
+    <div className="max-w-md mx-auto bg-white p-6 rounded-xl shadow mt-10">
+      <h2 className="text-2xl font-bold mb-4">Вход поставщика</h2>
+      <form onSubmit={handleSubmit} className="space-y-4">
+        <input
+          type="email"
+          placeholder="Email"
+          className="w-full p-3 border rounded-xl"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          required
+        />
+        <input
+          type="password"
+          placeholder="Пароль"
+          className="w-full p-3 border rounded-xl"
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+          required
+        />
+        <button
+          type="submit"
+          className="w-full bg-primary text-white py-3 rounded-xl hover:bg-secondary transition"
+        >
+          Войти
+        </button>
+      </form>
+    </div>
   );
 };
 
