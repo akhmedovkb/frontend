@@ -7,13 +7,11 @@ export default {
   theme: {
     extend: {
       colors: {
-        brand: {
-          primary: "#FF5722",
-          secondary: "#FFAD7A",
-          background: "#FFEAD2",
-          surface: "#F1F1F1",
-          white: "#FFFFFF",
-        },
+        primary: "#FF5722",       // основной акцент
+        secondary: "#FFAD7A",     // вторичный акцент
+        block: "#FFEAD2",         // фон блоков
+        background: "#F1F1F1",    // общий фон
+        white: "#FFFFFF",         // белый
       },
     },
   },
