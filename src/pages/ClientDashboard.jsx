@@ -1,48 +1,40 @@
+// pages/ClientDashboard.jsx
 import React, { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import axios from 'axios';
 
 function ClientDashboard() {
   const [client, setClient] = useState(null);
-  const navigate = useNavigate();
 
   useEffect(() => {
-    const fetchClient = async () => {
-      const token = localStorage.getItem('clientToken');
-      if (!token) return navigate('/client-login');
+    const token = localStorage.getItem('clientToken');
+    if (!token) return;
 
-      try {
-        const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/clients/me`, {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        });
-        if (!response.ok) throw new Error('Ошибка при получении данных');
-        const data = await response.json();
-        setClient(data);
-      } catch (error) {
-        console.error(error);
-        localStorage.removeItem('clientToken');
-        navigate('/client-login');
+    axios.get('https://travella-production.up.railway.app/api/clients/me', {
+      headers: {
+        Authorization: `Bearer ${token}`
       }
-    };
-
-    fetchClient();
-  }, [navigate]);
+    })
+    .then(res => setClient(res.data))
+    .catch(err => console.error('Ошибка при получении данных клиента', err));
+  }, []);
 
   const handleLogout = () => {
     localStorage.removeItem('clientToken');
-    navigate('/client-login');
+    window.location.href = '/client-login';
   };
 
-  if (!client) return <div>Загрузка...</div>;
+  if (!client) return <div className="p-6">Загрузка...</div>;
 
   return (
-    <div className="p-4 max-w-md mx-auto">
+    <div className="p-6">
       <h1 className="text-2xl font-bold mb-4">Личный кабинет клиента</h1>
       <p><strong>Имя:</strong> {client.name}</p>
       <p><strong>Email:</strong> {client.email}</p>
       <p><strong>Телефон:</strong> {client.phone}</p>
-      <button onClick={handleLogout} className="mt-4 bg-red-500 text-white px-4 py-2 rounded">
+      <button
+        onClick={handleLogout}
+        className="mt-4 px-4 py-2 bg-red-500 text-white rounded"
+      >
         Выйти
       </button>
     </div>
