@@ -76,9 +76,19 @@ const RegistrationForm = () => {
         <textarea name="description" placeholder="Описание" onChange={handleChange} required className="w-full p-3 border rounded-xl bg-block" />
 
         <select multiple name="languages" onChange={handleChange} className="w-full p-3 border rounded-xl bg-block">
+          <option value="Узбекский">Узбекский</option>
           <option value="Русский">Русский</option>
           <option value="Английский">Английский</option>
-          <option value="Узбекский">Узбекский</option>
+          <option value="Итальянский">Итальянский</option>
+          <option value="Французкий">Французкий</option>
+          <option value="Испанский">Испанский</option>
+          <option value="Голландский">Голландский</option>
+          <option value="Арабский">Арабский</option>
+          <option value="Хинди">Хинди</option>
+          <option value="Китайский">Китайский</option>
+          <option value="Немецкий">Немецкий</option>
+          <option value="Турецкий">Турецкий</option>
+          <option value="Японский">Японский</option>
         </select>
 
         <input type="file" multiple accept="image/*" onChange={handleChange} className="w-full p-3 bg-block rounded-xl" />
