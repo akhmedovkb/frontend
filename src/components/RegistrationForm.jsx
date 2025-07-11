@@ -43,7 +43,7 @@ const RegistrationForm = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    const response = await fetch("https://your-api-url.com/api/providers/register", {
+    const response = await fetch("https://travella-production.up.railway.app/api/providers/register", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(formData),
