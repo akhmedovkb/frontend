@@ -12,13 +12,13 @@ function RegistrationForm() {
     type: '',
     name: '',
     location: '',
-    contactPerson: '',
+    contact_name: '',
     email: '',
     phone: '',
     languages: [],
     password: '',
     description: '',
-    images: [] // base64 изображения
+    images: []
   });
 
   const handleChange = (e) => {
@@ -36,30 +36,24 @@ function RegistrationForm() {
 
   const handleImagesChange = (e) => {
     const files = Array.from(e.target.files);
-
     Promise.all(
       files.map(file => new Promise((resolve, reject) => {
         const reader = new FileReader();
         reader.onload = () => resolve(reader.result);
-        reader.onerror = (err) => reject(err);
+        reader.onerror = reject;
         reader.readAsDataURL(file);
       }))
     )
     .then(base64Images => {
-      setFormData(prev => ({
-        ...prev,
-        images: base64Images
-      }));
+      setFormData(prev => ({ ...prev, images: base64Images }));
     })
     .catch(err => {
-      console.error('Ошибка при чтении файлов:', err);
+      console.error('Ошибка при чтении изображений:', err);
     });
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-
-    console.log('Отправляемые данные:', formData); // 👈 Добавлено
 
     try {
       const res = await fetch('https://travella-production.up.railway.app/api/providers/register', {
@@ -71,7 +65,7 @@ function RegistrationForm() {
       const data = await res.json();
       alert(data.message || data.error || 'Что-то пошло не так');
     } catch (err) {
-      console.error(err);
+      console.error('Ошибка при отправке:', err);
       alert('Ошибка при отправке');
     }
   };
@@ -93,7 +87,7 @@ function RegistrationForm() {
 
       <input name="name" value={formData.name} onChange={handleChange} placeholder="Название" className="w-full p-2 border rounded" required />
       <input name="location" value={formData.location} onChange={handleChange} placeholder="Локация" className="w-full p-2 border rounded" required />
-      <input name="contactPerson" value={formData.contactPerson} onChange={handleChange} placeholder="Контактное лицо (ФИО)" className="w-full p-2 border rounded" required />
+      <input name="contact_name" value={formData.contact_name} onChange={handleChange} placeholder="Контактное лицо (ФИО)" className="w-full p-2 border rounded" required />
       <input name="email" type="email" value={formData.email} onChange={handleChange} placeholder="Email" className="w-full p-2 border rounded" required />
       <input name="phone" value={formData.phone} onChange={handleChange} placeholder="Номер телефона" className="w-full p-2 border rounded" required />
 
