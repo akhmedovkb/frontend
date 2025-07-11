@@ -1,80 +1,172 @@
+// src/pages/Dashboard.jsx
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
 const Dashboard = () => {
-  const [provider, setProvider] = useState(null);
   const navigate = useNavigate();
+  const [provider, setProvider] = useState(null);
+  const [formData, setFormData] = useState({
+    email: "",
+    password: "",
+    images: [],
+  });
 
-  const logout = () => {
-    localStorage.removeItem("token");
-    navigate("/login");
-  };
+  const token = localStorage.getItem("providerToken");
 
   useEffect(() => {
-    const fetchProfile = async () => {
-      try {
-        const token = localStorage.getItem("token");
-        const res = await fetch("https://travella-production.up.railway.app/api/providers/profile", {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        });
+    if (!token) return navigate("/login");
 
-        const data = await res.json();
-        if (res.ok) {
-          setProvider(data.provider);
-        } else {
-          console.error("Ошибка загрузки профиля:", data.error);
-        }
+    const fetchData = async () => {
+      try {
+        const response = await fetch(
+          "https://travella-production.up.railway.app/api/providers/profile",
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          }
+        );
+        const data = await response.json();
+        setProvider(data);
+        setFormData({
+          email: data.email || "",
+          password: "",
+          images: data.images || [],
+        });
       } catch (err) {
-        console.error("Ошибка при запросе профиля:", err);
+        console.error("Ошибка загрузки профиля:", err);
       }
     };
 
-    fetchProfile();
-  }, []);
+    fetchData();
+  }, [token]);
 
-  if (!provider) {
-    return <div className="text-center mt-10">Загрузка данных...</div>;
-  }
+  const handleLogout = () => {
+    localStorage.removeItem("providerToken");
+    navigate("/login");
+  };
+
+  const handleChange = (e) => {
+    const { name, value, type } = e.target;
+    if (type === "file") {
+      const file = e.target.files[0];
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setFormData((prev) => ({ ...prev, images: [reader.result] }));
+      };
+      reader.readAsDataURL(file);
+    } else {
+      setFormData({ ...formData, [name]: value });
+    }
+  };
+
+  const handleUpdate = async () => {
+    try {
+      const response = await fetch(
+        "https://travella-production.up.railway.app/api/providers/profile",
+        {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify(formData),
+        }
+      );
+      const result = await response.json();
+      alert(result.message || "Профиль обновлён");
+      setProvider((prev) => ({ ...prev, ...formData }));
+    } catch (err) {
+      console.error("Ошибка обновления профиля:", err);
+    }
+  };
+
+  if (!provider) return <div className="p-6">Загрузка...</div>;
 
   return (
-    <div className="max-w-4xl mx-auto bg-white p-6 mt-10 rounded-2xl shadow-md">
-      <div className="flex justify-between items-center mb-6">
-        <h2 className="text-2xl font-bold text-primary">Личный кабинет поставщика</h2>
+    <div className="max-w-3xl mx-auto p-6">
+      <h1 className="text-2xl font-bold mb-4">Личный кабинет поставщика</h1>
+      <div className="bg-white rounded-xl shadow p-6 space-y-4">
+        <div>
+          <label className="block font-medium">Название:</label>
+          <div className="text-lg">{provider.name}</div>
+        </div>
+        <div>
+          <label className="block font-medium">Тип услуги:</label>
+          <div>{provider.type}</div>
+        </div>
+        <div>
+          <label className="block font-medium">Контактное лицо:</label>
+          <div>{provider.contact_name}</div>
+        </div>
+        <div>
+          <label className="block font-medium">Email:</label>
+          <input
+            type="email"
+            name="email"
+            value={formData.email}
+            onChange={handleChange}
+            className="w-full border rounded p-2"
+          />
+        </div>
+        <div>
+          <label className="block font-medium">Телефон:</label>
+          <div>{provider.phone}</div>
+        </div>
+        <div>
+          <label className="block font-medium">Пароль (новый):</label>
+          <input
+            type="password"
+            name="password"
+            value={formData.password}
+            onChange={handleChange}
+            className="w-full border rounded p-2"
+          />
+        </div>
+        <div>
+          <label className="block font-medium">Локация:</label>
+          <div>{provider.location}</div>
+        </div>
+        <div>
+          <label className="block font-medium">Описание:</label>
+          <div>{provider.description}</div>
+        </div>
+        <div>
+          <label className="block font-medium">Языки:</label>
+          <div>{provider.languages?.join(", ")}</div>
+        </div>
+        <div>
+          <label className="block font-medium">Фото:</label>
+          {provider.images?.length > 0 && (
+            <img
+              src={provider.images[0]}
+              alt="Фото"
+              className="w-32 h-32 object-cover rounded"
+            />
+          )}
+          <input type="file" accept="image/*" onChange={handleChange} className="mt-2" />
+        </div>
         <button
-          onClick={logout}
-          className="bg-red-500 text-white px-4 py-2 rounded-xl hover:bg-red-600"
+          onClick={handleUpdate}
+          className="bg-primary text-white px-4 py-2 rounded-xl hover:bg-secondary"
         >
-          Выйти
+          Сохранить изменения
         </button>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div><strong>Тип:</strong> {provider.type}</div>
-        <div><strong>Название:</strong> {provider.name}</div>
-        <div><strong>Контактное лицо:</strong> {provider.contact_name}</div>
-        <div><strong>Email:</strong> {provider.email}</div>
-        <div><strong>Телефон:</strong> {provider.phone}</div>
-        <div><strong>Локация:</strong> {provider.location}</div>
-        <div><strong>Языки:</strong> {provider.languages?.join(", ")}</div>
-        <div className="md:col-span-2"><strong>Описание:</strong> {provider.description}</div>
+      <div className="mt-6">
+        <button
+          onClick={handleLogout}
+          className="text-sm text-red-600 underline"
+        >
+          Выйти из аккаунта
+        </button>
+      </div>
 
-        {provider.images?.length > 0 && (
-          <div className="md:col-span-2">
-            <strong>Фото:</strong>
-            <div className="flex flex-wrap gap-4 mt-2">
-              {provider.images.map((img, i) => (
-                <img
-                  key={i}
-                  src={img}
-                  alt={`Фото ${i + 1}`}
-                  className="w-32 h-32 object-cover rounded-xl border"
-                />
-              ))}
-            </div>
-          </div>
-        )}
+      {/* Блок управления услугами (пока placeholder) */}
+      <div className="mt-10">
+        <h2 className="text-xl font-semibold mb-2">Мои услуги</h2>
+        <p>Управление услугами появится здесь...</p>
       </div>
     </div>
   );
