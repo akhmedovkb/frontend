@@ -56,7 +56,7 @@ const Dashboard = () => {
       };
       reader.readAsDataURL(file);
     } else {
-      setFormData({ ...formData, [name]: value });
+      setFormData((prev) => ({ ...prev, [name]: value }));
     }
   };
 
@@ -133,7 +133,11 @@ const Dashboard = () => {
         </div>
         <div>
           <label className="block font-medium">Языки:</label>
-          <div>{provider.languages?.join(", ")}</div>
+          <div>
+            {Array.isArray(provider.languages)
+              ? provider.languages.join(", ")
+              : provider.languages}
+          </div>
         </div>
         <div>
           <label className="block font-medium">Фото:</label>
