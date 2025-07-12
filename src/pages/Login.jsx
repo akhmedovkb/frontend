@@ -22,9 +22,7 @@ const Login = () => {
 
       const data = await response.json();
       if (response.ok) {
-        // ✅ сохраняем с правильным ключом
-        localStorage.setItem("providerToken", data.token);
-        console.log("Успешный вход, токен:", data.token);
+        localStorage.setItem("providerToken", data.token); // ✅ правильный ключ
         navigate("/dashboard");
       } else {
         alert(data.error || "Ошибка входа");
