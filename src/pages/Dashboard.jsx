@@ -5,11 +5,19 @@ import { useNavigate } from "react-router-dom";
 const Dashboard = () => {
   const navigate = useNavigate();
   const [provider, setProvider] = useState(null);
-  const [formData, setFormData] = useState({ email: "", password: "", images: [] });
+  const [formData, setFormData] = useState({
+    email: "",
+    password: "",
+    images: [],
+  });
   const [services, setServices] = useState([]);
-  const [newService, setNewService] = useState({ title: "", description: "", price: "", category: "", image: "" });
-  const [editingServiceId, setEditingServiceId] = useState(null);
-  const [editServiceData, setEditServiceData] = useState({ title: "", description: "", price: "", category: "", image: "" });
+  const [newService, setNewService] = useState({
+    title: "",
+    description: "",
+    price: "",
+    category: "",
+    images: [],
+  });
 
   const token = localStorage.getItem("providerToken");
 
@@ -18,20 +26,25 @@ const Dashboard = () => {
 
     const fetchData = async () => {
       try {
-        const profileRes = await fetch("https://travella-production.up.railway.app/api/providers/profile", {
+        const response = await fetch("https://travella-production.up.railway.app/api/providers/profile", {
           headers: { Authorization: `Bearer ${token}` },
         });
-        const profileData = await profileRes.json();
-        setProvider(profileData);
-        setFormData({ email: profileData.email || "", password: "", images: profileData.images || [] });
+        const data = await response.json();
+        setProvider(data);
+        setFormData({
+          email: data.email || "",
+          password: "",
+          images: data.images || [],
+        });
 
-        const servicesRes = await fetch("https://travella-production.up.railway.app/api/providers/services", {
+        // Получение услуг
+        const resServices = await fetch("https://travella-production.up.railway.app/api/providers/services", {
           headers: { Authorization: `Bearer ${token}` },
         });
-        const servicesData = await servicesRes.json();
-        setServices(servicesData);
+        const serviceData = await resServices.json();
+        setServices(serviceData);
       } catch (err) {
-        console.error("Ошибка загрузки данных:", err);
+        console.error("Ошибка загрузки:", err);
       }
     };
 
@@ -43,7 +56,7 @@ const Dashboard = () => {
     navigate("/login");
   };
 
-  const handleChange = (e) => {
+  const handleProfileChange = (e) => {
     const { name, value, type } = e.target;
     if (type === "file") {
       const file = e.target.files[0];
@@ -57,143 +70,167 @@ const Dashboard = () => {
     }
   };
 
-  const handleUpdate = async () => {
+  const handleUpdateProfile = async () => {
     try {
       const response = await fetch("https://travella-production.up.railway.app/api/providers/profile", {
         method: "PUT",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
         body: JSON.stringify(formData),
       });
       const result = await response.json();
       alert(result.message || "Профиль обновлён");
-      setProvider((prev) => ({ ...prev, ...formData }));
     } catch (err) {
       console.error("Ошибка обновления профиля:", err);
     }
   };
 
-  const handleServiceInput = (e) => {
-    const { name, value } = e.target;
-    setNewService({ ...newService, [name]: value });
+  const handleServiceChange = (index, field, value) => {
+    const updated = [...services];
+    updated[index][field] = value;
+    setServices(updated);
   };
 
-  const handleImageUpload = (e) => {
+  const handleServiceImageChange = (e, index) => {
     const file = e.target.files[0];
     const reader = new FileReader();
-    reader.onloadend = () => setNewService((prev) => ({ ...prev, image: reader.result }));
+    reader.onloadend = () => {
+      const updated = [...services];
+      updated[index].images = [reader.result];
+      setServices(updated);
+    };
     reader.readAsDataURL(file);
   };
 
-  const addService = async () => {
+  const handleUpdateService = async (service) => {
     try {
-      const res = await fetch("https://travella-production.up.railway.app/api/providers/services", {
-        method: "POST",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-        body: JSON.stringify(newService),
+      await fetch(`https://travella-production.up.railway.app/api/providers/services/${service.id}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(service),
       });
-      const data = await res.json();
-      setServices((prev) => [...prev, data]);
-      setNewService({ title: "", description: "", price: "", category: "", image: "" });
+      alert("Услуга обновлена");
     } catch (err) {
-      console.error("Ошибка добавления услуги:", err);
+      console.error("Ошибка обновления услуги:", err);
     }
   };
 
-  const deleteService = async (id) => {
+  const handleDeleteService = async (id) => {
+    if (!window.confirm("Удалить услугу?")) return;
     try {
       await fetch(`https://travella-production.up.railway.app/api/providers/services/${id}`, {
         method: "DELETE",
-        headers: { Authorization: `Bearer ${token}` },
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
       });
-      setServices((prev) => prev.filter((s) => s.id !== id));
+      setServices(services.filter((s) => s.id !== id));
     } catch (err) {
-      console.error("Ошибка удаления услуги:", err);
+      console.error("Ошибка удаления:", err);
     }
   };
 
-  const startEditService = (service) => {
-    setEditingServiceId(service.id);
-    setEditServiceData(service);
+  const handleNewServiceChange = (e) => {
+    const { name, value, type } = e.target;
+    if (type === "file") {
+      const file = e.target.files[0];
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setNewService((prev) => ({ ...prev, images: [reader.result] }));
+      };
+      reader.readAsDataURL(file);
+    } else {
+      setNewService({ ...newService, [name]: value });
+    }
   };
 
-  const saveEditService = async () => {
+  const handleAddService = async () => {
     try {
-      const res = await fetch(`https://travella-production.up.railway.app/api/providers/services/${editingServiceId}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-        body: JSON.stringify(editServiceData),
+      const response = await fetch("https://travella-production.up.railway.app/api/providers/services", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(newService),
       });
-      const updated = await res.json();
-      setServices((prev) => prev.map((s) => (s.id === updated.id ? updated : s)));
-      setEditingServiceId(null);
-      setEditServiceData({ title: "", description: "", price: "", category: "", image: "" });
+      const result = await response.json();
+      setServices([...services, result]);
+      setNewService({ title: "", description: "", price: "", category: "", images: [] });
     } catch (err) {
-      console.error("Ошибка обновления услуги:", err);
+      console.error("Ошибка добавления услуги:", err);
     }
   };
 
   if (!provider) return <div className="p-6">Загрузка...</div>;
 
   return (
-    <div className="max-w-4xl mx-auto p-6">
-      <h1 className="text-2xl font-bold mb-4">Личный кабинет поставщика</h1>
+    <div className="max-w-5xl mx-auto p-6 space-y-10">
+      <h1 className="text-2xl font-bold">Личный кабинет поставщика</h1>
 
       {/* Профиль */}
-      <div className="bg-white rounded-xl shadow p-6 space-y-4">
-        <div><strong>Название:</strong> {provider.name}</div>
-        <div><strong>Тип:</strong> {provider.type}</div>
-        <div><strong>Email:</strong>
-          <input name="email" value={formData.email} onChange={handleChange} className="w-full border p-2 rounded" />
+      <div className="bg-white p-6 rounded-xl shadow space-y-4">
+        <div className="flex justify-between items-center">
+          <h2 className="text-xl font-semibold">Профиль</h2>
+          <button onClick={handleLogout} className="text-sm text-red-600 underline">Выйти</button>
         </div>
-        <div><strong>Пароль:</strong>
-          <input name="password" type="password" value={formData.password} onChange={handleChange} className="w-full border p-2 rounded" />
-        </div>
-        <div><strong>Фото:</strong>
-          {provider.images?.[0] && <img src={provider.images[0]} alt="img" className="w-20 h-20 object-cover rounded" />}
-          <input type="file" onChange={handleChange} className="mt-2" />
-        </div>
-        <button onClick={handleUpdate} className="bg-primary text-white px-4 py-2 rounded">Сохранить профиль</button>
-      </div>
-
-      <div className="mt-6">
-        <button onClick={handleLogout} className="text-red-600 text-sm underline">Выйти</button>
+        <input name="email" value={formData.email} onChange={handleProfileChange} placeholder="Email" className="w-full border p-2 rounded" />
+        <input name="password" type="password" value={formData.password} onChange={handleProfileChange} placeholder="Новый пароль" className="w-full border p-2 rounded" />
+        <input type="file" onChange={handleProfileChange} className="w-full border p-2 rounded" />
+        <button onClick={handleUpdateProfile} className="bg-primary text-white px-4 py-2 rounded hover:bg-secondary">Сохранить</button>
       </div>
 
       {/* Услуги */}
-      <div className="mt-10">
-        <h2 className="text-xl font-bold mb-4">Мои услуги</h2>
+      <div className="bg-white p-6 rounded-xl shadow space-y-6">
+        <h2 className="text-xl font-semibold">Мои услуги</h2>
 
-        {services.map((s) => (
-          <div key={s.id} className="border p-4 rounded mb-4">
-            {editingServiceId === s.id ? (
-              <div className="space-y-2">
-                <input name="title" value={editServiceData.title} onChange={(e) => setEditServiceData({ ...editServiceData, title: e.target.value })} className="w-full border p-2 rounded" />
-                <textarea name="description" value={editServiceData.description} onChange={(e) => setEditServiceData({ ...editServiceData, description: e.target.value })} className="w-full border p-2 rounded" />
-                <input name="price" value={editServiceData.price} onChange={(e) => setEditServiceData({ ...editServiceData, price: e.target.value })} className="w-full border p-2 rounded" />
-                <input name="category" value={editServiceData.category} onChange={(e) => setEditServiceData({ ...editServiceData, category: e.target.value })} className="w-full border p-2 rounded" />
-                <button onClick={saveEditService} className="bg-blue-500 text-white px-3 py-1 rounded">Сохранить</button>
-              </div>
-            ) : (
-              <>
-                <div><strong>{s.title}</strong> — {s.category} — ${s.price}</div>
-                <p>{s.description}</p>
-                {s.image && <img src={s.image} alt="" className="w-24 h-24 object-cover mt-2 rounded" />}
-                <div className="mt-2 space-x-2">
-                  <button onClick={() => startEditService(s)} className="text-sm text-blue-600 underline">Редактировать</button>
-                  <button onClick={() => deleteService(s.id)} className="text-sm text-red-600 underline">Удалить</button>
-                </div>
-              </>
-            )}
+        {services.map((service, index) => (
+          <div key={service.id} className="border p-4 rounded-xl space-y-2">
+            <input
+              value={service.title}
+              onChange={(e) => handleServiceChange(index, "title", e.target.value)}
+              className="w-full border p-2 rounded"
+            />
+            <textarea
+              value={service.description}
+              onChange={(e) => handleServiceChange(index, "description", e.target.value)}
+              className="w-full border p-2 rounded"
+            />
+            <input
+              type="number"
+              value={service.price}
+              onChange={(e) => handleServiceChange(index, "price", e.target.value)}
+              className="w-full border p-2 rounded"
+            />
+            <input
+              value={service.category}
+              onChange={(e) => handleServiceChange(index, "category", e.target.value)}
+              className="w-full border p-2 rounded"
+            />
+            {service.images?.[0] && <img src={service.images[0]} className="w-24 h-24 object-cover rounded" />}
+            <input type="file" onChange={(e) => handleServiceImageChange(e, index)} />
+            <div className="flex gap-4">
+              <button onClick={() => handleUpdateService(service)} className="bg-blue-500 text-white px-3 py-1 rounded">Сохранить</button>
+              <button onClick={() => handleDeleteService(service.id)} className="bg-red-500 text-white px-3 py-1 rounded">Удалить</button>
+            </div>
           </div>
         ))}
 
-        <h3 className="font-semibold mt-6">Добавить услугу:</h3>
-        <input name="title" value={newService.title} onChange={handleServiceInput} placeholder="Название" className="w-full border p-2 rounded mt-2" />
-        <textarea name="description" value={newService.description} onChange={handleServiceInput} placeholder="Описание" className="w-full border p-2 rounded mt-2" />
-        <input name="price" value={newService.price} onChange={handleServiceInput} placeholder="Цена" className="w-full border p-2 rounded mt-2" />
-        <input name="category" value={newService.category} onChange={handleServiceInput} placeholder="Категория" className="w-full border p-2 rounded mt-2" />
-        <input type="file" accept="image/*" onChange={handleImageUpload} className="mt-2" />
-        <button onClick={addService} className="bg-green-600 text-white px-4 py-2 rounded mt-3">Добавить</button>
+        {/* Добавить новую услугу */}
+        <div className="border p-4 rounded-xl space-y-2 bg-gray-50">
+          <h3 className="font-semibold">Новая услуга</h3>
+          <input name="title" value={newService.title} onChange={handleNewServiceChange} placeholder="Название" className="w-full border p-2 rounded" />
+          <textarea name="description" value={newService.description} onChange={handleNewServiceChange} placeholder="Описание" className="w-full border p-2 rounded" />
+          <input name="price" value={newService.price} onChange={handleNewServiceChange} placeholder="Цена" className="w-full border p-2 rounded" />
+          <input name="category" value={newService.category} onChange={handleNewServiceChange} placeholder="Категория" className="w-full border p-2 rounded" />
+          <input type="file" onChange={handleNewServiceChange} />
+          <button onClick={handleAddService} className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700">Добавить</button>
+        </div>
       </div>
     </div>
   );
