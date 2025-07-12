@@ -1,4 +1,3 @@
-// ✅ src/pages/Login.jsx (для поставщика)
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 
@@ -21,8 +20,8 @@ const Login = () => {
 
       const data = await response.json();
       if (response.ok) {
-        localStorage.setItem("providerToken", data.token); // ключ должен быть providerToken
-        navigate("/dashboard");
+        localStorage.setItem("providerToken", data.token); // ВАЖНО!
+        navigate("/dashboard"); // После сохранения токена
       } else {
         alert(data.error || "Ошибка входа");
       }
