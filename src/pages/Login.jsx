@@ -1,3 +1,4 @@
+// ✅ src/pages/Login.jsx (для поставщика)
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 
@@ -13,23 +14,21 @@ const Login = () => {
         "https://travella-production.up.railway.app/api/providers/login",
         {
           method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
+          headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ email, password }),
         }
       );
 
       const data = await response.json();
       if (response.ok) {
-        localStorage.setItem("providerToken", data.token); // ✅ правильный ключ
+        localStorage.setItem("providerToken", data.token); // ключ должен быть providerToken
         navigate("/dashboard");
       } else {
         alert(data.error || "Ошибка входа");
       }
-    } catch (error) {
-      console.error("Ошибка при входе:", error);
-      alert("Сервер не отвечает");
+    } catch (err) {
+      console.error("Ошибка при входе:", err);
+      alert("Ошибка сервера");
     }
   };
 
