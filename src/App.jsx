@@ -15,19 +15,36 @@ function App() {
       <Routes>
         <Route path="/register" element={<RegistrationForm />} />
         <Route path="/login" element={<Login />} />
-        <Route path="/dashboard" element={
-          <PrivateRoute>
-            <Dashboard />
-          </PrivateRoute>
-        } />
+
+        <Route
+          path="/dashboard"
+          element={
+            <PrivateRoute>
+              <Dashboard />
+            </PrivateRoute>
+          }
+        />
+
         <Route path="/client/register" element={<ClientRegister />} />
         <Route path="/client/login" element={<ClientLogin />} />
-        <Route path="/client/dashboard" element={
-          <ClientPrivateRoute>
-            <ClientDashboard />
-          </ClientPrivateRoute>
-        } />
-        <Route path="*" element={<div className="text-center mt-10 text-xl">404 — Страница не найдена</div>} />
+        <Route
+          path="/client/dashboard"
+          element={
+            <ClientPrivateRoute>
+              <ClientDashboard />
+            </ClientPrivateRoute>
+          }
+        />
+
+        {/* Страница 404 */}
+        <Route
+          path="*"
+          element={
+            <div className="text-center mt-10 text-xl">
+              404 — Страница не найдена
+            </div>
+          }
+        />
       </Routes>
     </Router>
   );
