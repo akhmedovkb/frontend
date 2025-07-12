@@ -21,7 +21,7 @@ const Dashboard = () => {
   const token = localStorage.getItem("token");
 
   useEffect(() => {
-    if (!token) return navigate("/login");
+    //if (!token) return navigate("/login");
 
     fetch("https://travella-production.up.railway.app/api/providers/profile", {
       headers: {
