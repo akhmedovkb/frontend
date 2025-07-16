@@ -25,13 +25,23 @@ const Dashboard = () => {
       headers: { Authorization: `Bearer ${token}` },
     })
       .then((res) => res.json())
-      .then((data) => setProvider(data));
+      .then((data) => setProvider(data))
+      .catch((err) => {
+        console.error("Ошибка загрузки профиля:", err);
+        alert("Ошибка загрузки профиля");
+      });
 
     fetch("https://travella-production.up.railway.app/api/providers/services", {
       headers: { Authorization: `Bearer ${token}` },
     })
-      .then((res) => res.json())
-      .then((data) => setServices(data));
+      .then(async (res) => {
+        const data = await res.json();
+        console.log("✅ Сервисы:", data);
+        setServices(data);
+      })
+      .catch((err) => {
+        console.error("❌ Ошибка при получении сервисов:", err);
+      });
   }, [token]);
 
   const handleLogout = () => {
@@ -73,9 +83,19 @@ const Dashboard = () => {
       }
     );
     const result = await response.json();
-    alert(result.message);
-    setNewService({ title: "", description: "", price: "", category: "", availability: [] });
-    setServices([...services, result.service]);
+    if (response.ok) {
+      alert(result.message || "Услуга добавлена");
+      setNewService({
+        title: "",
+        description: "",
+        price: "",
+        category: "",
+        availability: [],
+      });
+      setServices([...services, result.service]);
+    } else {
+      alert(result.error || "Ошибка при добавлении");
+    }
   };
 
   if (!provider) return <div className="p-6">Загрузка...</div>;
@@ -98,7 +118,11 @@ const Dashboard = () => {
           />
         )}
         <div className="text-center font-bold text-xl">{provider.name}</div>
-        <div className="text-center text-gray-500">{provider.languages?.join(", ")}</div>
+        <div className="text-center text-gray-500">
+          {Array.isArray(provider.languages)
+            ? provider.languages.join(", ")
+            : ""}
+        </div>
 
         <div>
           <label className="font-medium">Тип:</label>
@@ -123,10 +147,34 @@ const Dashboard = () => {
       {/* Правая колонка: Управление услугами */}
       <div className="w-full md:w-2/3 bg-white rounded-xl shadow p-6">
         <h2 className="text-xl font-bold mb-4">Добавить услугу</h2>
-        <input name="title" placeholder="Заголовок" value={newService.title} onChange={handleServiceChange} className="w-full mb-2 p-2 border rounded" />
-        <input name="description" placeholder="Описание" value={newService.description} onChange={handleServiceChange} className="w-full mb-2 p-2 border rounded" />
-        <input name="price" placeholder="Цена" value={newService.price} onChange={handleServiceChange} className="w-full mb-2 p-2 border rounded" />
-        <input name="category" placeholder="Категория" value={newService.category} onChange={handleServiceChange} className="w-full mb-2 p-2 border rounded" />
+        <input
+          name="title"
+          placeholder="Заголовок"
+          value={newService.title}
+          onChange={handleServiceChange}
+          className="w-full mb-2 p-2 border rounded"
+        />
+        <input
+          name="description"
+          placeholder="Описание"
+          value={newService.description}
+          onChange={handleServiceChange}
+          className="w-full mb-2 p-2 border rounded"
+        />
+        <input
+          name="price"
+          placeholder="Цена"
+          value={newService.price}
+          onChange={handleServiceChange}
+          className="w-full mb-2 p-2 border rounded"
+        />
+        <input
+          name="category"
+          placeholder="Категория"
+          value={newService.category}
+          onChange={handleServiceChange}
+          className="w-full mb-2 p-2 border rounded"
+        />
 
         <div className="mb-2">
           <label className="block font-medium">Доступность по датам:</label>
@@ -145,7 +193,10 @@ const Dashboard = () => {
             Добавить даты
           </button>
           <div className="text-sm text-gray-600 mt-2">
-            Выбрано: {newService.availability.join(", ")}
+            Выбрано:{" "}
+            {Array.isArray(newService.availability)
+              ? newService.availability.join(", ")
+              : ""}
           </div>
         </div>
 
@@ -161,9 +212,16 @@ const Dashboard = () => {
         <h2 className="text-xl font-bold mb-2">Мои услуги</h2>
         {services.map((srv) => (
           <div key={srv.id} className="border p-3 rounded mb-2">
-            <div><strong>{srv.title}</strong> — {srv.price} сум</div>
+            <div>
+              <strong>{srv.title}</strong> — {srv.price} сум
+            </div>
             <div className="text-sm">Категория: {srv.category}</div>
-            <div className="text-sm">Доступные даты: {srv.availability?.join(", ")}</div>
+            <div className="text-sm">
+              Доступные даты:{" "}
+              {Array.isArray(srv.availability)
+                ? srv.availability.join(", ")
+                : "—"}
+            </div>
           </div>
         ))}
       </div>
