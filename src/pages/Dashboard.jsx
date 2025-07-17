@@ -1,3 +1,4 @@
+// src/pages/Dashboard.jsx
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import DatePicker from "react-datepicker";
@@ -6,18 +7,16 @@ import "react-datepicker/dist/react-datepicker.css";
 const Dashboard = () => {
   const navigate = useNavigate();
   const token = localStorage.getItem("providerToken");
-
   const [provider, setProvider] = useState(null);
   const [services, setServices] = useState([]);
-  const [editingServiceId, setEditingServiceId] = useState(null);
-  const emptyService = {
+  const [newService, setNewService] = useState({
     title: "",
     description: "",
     price: "",
     category: "",
     availability: [],
-  };
-  const [newService, setNewService] = useState(emptyService);
+  });
+  const [editingServiceId, setEditingServiceId] = useState(null);
   const [dateRange, setDateRange] = useState([null, null]);
   const [startDate, endDate] = dateRange;
 
@@ -28,20 +27,13 @@ const Dashboard = () => {
       headers: { Authorization: `Bearer ${token}` },
     })
       .then((res) => res.json())
-      .then((data) => setProvider(data))
-      .catch((err) => {
-        console.error("Ошибка загрузки профиля:", err);
-        alert("Ошибка загрузки профиля");
-      });
+      .then((data) => setProvider(data));
 
     fetch("https://travella-production.up.railway.app/api/providers/services", {
       headers: { Authorization: `Bearer ${token}` },
     })
       .then((res) => res.json())
-      .then((data) => setServices(data))
-      .catch((err) => {
-        console.error("Ошибка получения услуг:", err);
-      });
+      .then((data) => setServices(data));
   }, [token]);
 
   const handleLogout = () => {
@@ -64,17 +56,16 @@ const Dashboard = () => {
       }
       setNewService((prev) => ({
         ...prev,
-        availability: [...new Set([...prev.availability, ...dates])],
+        availability: [...prev.availability, ...dates],
       }));
       setDateRange([null, null]);
     }
   };
 
-  const handleAddService = async () => {
+  const handleAddOrUpdateService = async () => {
     const url = editingServiceId
       ? `https://travella-production.up.railway.app/api/providers/services/${editingServiceId}`
-      : "https://travella-production.up.railway.app/api/providers/services";
-
+      : `https://travella-production.up.railway.app/api/providers/services`;
     const method = editingServiceId ? "PUT" : "POST";
 
     const response = await fetch(url, {
@@ -87,58 +78,43 @@ const Dashboard = () => {
     });
 
     const result = await response.json();
-
     if (response.ok) {
-      alert(result.message || "Услуга сохранена");
-      if (editingServiceId) {
-        setServices((prev) =>
-          prev.map((s) => (s.id === editingServiceId ? result.service : s))
-        );
-        setEditingServiceId(null);
-      } else {
-        setServices((prev) => [...prev, result.service]);
-      }
-      setNewService(emptyService);
-      setDateRange([null, null]);
+      alert(result.message || "Успешно");
+      setNewService({ title: "", description: "", price: "", category: "", availability: [] });
+      setEditingServiceId(null);
+
+      const updatedServices = editingServiceId
+        ? services.map((s) => (s.id === editingServiceId ? result.service : s))
+        : [...services, result.service];
+      setServices(updatedServices);
     } else {
       alert(result.error || "Ошибка при сохранении");
     }
   };
 
-  const handleEditService = (service) => {
-    setEditingServiceId(service.id);
-    setNewService(service);
-    if (service.availability?.length) {
-      const start = new Date(service.availability[0]);
-      const end = new Date(service.availability[service.availability.length - 1]);
-      setDateRange([start, end]);
-    } else {
-      setDateRange([null, null]);
-    }
+  const handleEdit = (srv) => {
+    setNewService({
+      title: srv.title,
+      description: srv.description,
+      price: srv.price,
+      category: srv.category,
+      availability: srv.availability || [],
+    });
+    setEditingServiceId(srv.id);
   };
 
-  const handleCancelEdit = () => {
-    setEditingServiceId(null);
-    setNewService(emptyService);
-    setDateRange([null, null]);
-  };
+  const handleDelete = async (id) => {
+    if (!window.confirm("Удалить эту услугу?")) return;
 
-  const handleDeleteService = async (id) => {
-    if (!window.confirm("Удалить услугу?")) return;
-
-    const res = await fetch(
-      `https://travella-production.up.railway.app/api/providers/services/${id}`,
-      {
-        method: "DELETE",
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      }
-    );
+    const res = await fetch(`https://travella-production.up.railway.app/api/providers/services/${id}`, {
+      method: "DELETE",
+      headers: { Authorization: `Bearer ${token}` },
+    });
 
     const result = await res.json();
     if (res.ok) {
-      setServices((prev) => prev.filter((s) => s.id !== id));
+      setServices(services.filter((s) => s.id !== id));
+      alert(result.message || "Услуга удалена");
     } else {
       alert(result.error || "Ошибка при удалении");
     }
@@ -150,92 +126,49 @@ const Dashboard = () => {
     <div className="flex flex-col md:flex-row max-w-7xl mx-auto p-6 gap-6">
       {/* Профиль */}
       <div className="w-full md:w-1/3 bg-white rounded-xl shadow p-6 space-y-4">
-        <button onClick={handleLogout} className="text-sm text-red-600 underline mb-4">
-          Выйти
-        </button>
-        {provider.images?.[0] && (
-          <img
-            src={provider.images[0]}
-            alt="Фото"
-            className="w-32 h-32 rounded-full object-cover mx-auto"
-          />
-        )}
+        <button onClick={handleLogout} className="text-sm text-red-600 underline mb-4">Выйти</button>
+        {provider.images?.[0] && <img src={provider.images[0]} alt="Фото" className="w-32 h-32 rounded-full object-cover mx-auto" />}
         <div className="text-center font-bold text-xl">{provider.name}</div>
-        <div className="text-center text-gray-500">
-          {Array.isArray(provider.languages) ? provider.languages.join(", ") : ""}
-        </div>
-        <div>
-          <label className="font-medium">Тип:</label>
-          <div>{provider.type}</div>
-        </div>
-        <div>
-          <label className="font-medium">Локация:</label>
-          <div>{provider.location}</div>
-        </div>
-        <div>
-          <label className="font-medium">Контакт:</label>
-          <div>{provider.contact_name}</div>
-          <div>{provider.phone}</div>
-          <div>{provider.email}</div>
-        </div>
-        <div>
-          <label className="font-medium">Описание:</label>
-          <div>{provider.description}</div>
-        </div>
+        <div className="text-center text-gray-500">{Array.isArray(provider.languages) ? provider.languages.join(", ") : ""}</div>
+        <div><strong>Тип:</strong> {provider.type}</div>
+        <div><strong>Локация:</strong> {provider.location}</div>
+        <div><strong>Контакт:</strong><br />{provider.contact_name}<br />{provider.phone}<br />{provider.email}</div>
+        <div><strong>Описание:</strong> {provider.description}</div>
       </div>
 
-      {/* Управление услугами */}
+      {/* Услуги */}
       <div className="w-full md:w-2/3 bg-white rounded-xl shadow p-6">
-        <h2 className="text-xl font-bold mb-4">
-          {editingServiceId ? "Редактировать услугу" : "Добавить услугу"}
-        </h2>
+        <h2 className="text-xl font-bold mb-4">{editingServiceId ? "Редактировать услугу" : "Добавить услугу"}</h2>
         <input name="title" placeholder="Заголовок" value={newService.title} onChange={handleServiceChange} className="w-full mb-2 p-2 border rounded" />
         <input name="description" placeholder="Описание" value={newService.description} onChange={handleServiceChange} className="w-full mb-2 p-2 border rounded" />
         <input name="price" placeholder="Цена" value={newService.price} onChange={handleServiceChange} className="w-full mb-2 p-2 border rounded" />
         <input name="category" placeholder="Категория" value={newService.category} onChange={handleServiceChange} className="w-full mb-2 p-2 border rounded" />
+        <DatePicker
+          selectsRange
+          startDate={startDate}
+          endDate={endDate}
+          onChange={(update) => setDateRange(update)}
+          isClearable={true}
+          inline
+        />
+        <button onClick={handleAddAvailability} className="mt-2 bg-blue-500 text-white px-3 py-1 rounded">Добавить даты</button>
+        <div className="text-sm text-gray-600 mt-2">Выбрано: {newService.availability.join(", ")}</div>
 
-        <div className="mb-2">
-          <label className="block font-medium">Доступность по датам:</label>
-          <DatePicker
-            selectsRange
-            startDate={startDate}
-            endDate={endDate}
-            onChange={(update) => setDateRange(update)}
-            isClearable={true}
-            inline
-          />
-          <button
-            onClick={handleAddAvailability}
-            className="mt-2 bg-blue-500 text-white px-3 py-1 rounded"
-          >
-            Добавить даты
-          </button>
-          <div className="text-sm text-gray-600 mt-2">
-            Выбрано: {Array.isArray(newService.availability) ? newService.availability.join(", ") : ""}
-          </div>
-        </div>
-
-        <div className="flex gap-4 mt-4">
-          <button onClick={handleAddService} className="bg-primary text-white px-4 py-2 rounded">
-            {editingServiceId ? "Сохранить изменения" : "Сохранить услугу"}
-          </button>
-          {editingServiceId && (
-            <button onClick={handleCancelEdit} className="bg-gray-300 text-black px-4 py-2 rounded">
-              Отмена редактирования
-            </button>
-          )}
-        </div>
+        <button onClick={handleAddOrUpdateService} className="bg-primary text-white px-4 py-2 rounded mt-4">
+          {editingServiceId ? "Сохранить изменения" : "Сохранить услугу"}
+        </button>
 
         <hr className="my-6" />
+
         <h2 className="text-xl font-bold mb-2">Мои услуги</h2>
         {services.map((srv) => (
           <div key={srv.id} className="border p-3 rounded mb-2">
             <div><strong>{srv.title}</strong> — {srv.price} сум</div>
             <div className="text-sm">Категория: {srv.category}</div>
-            <div className="text-sm">Доступные даты: {Array.isArray(srv.availability) ? srv.availability.join(", ") : "—"}</div>
-            <div className="flex gap-4 mt-2">
-              <button onClick={() => handleEditService(srv)} className="text-blue-600 underline text-sm">Редактировать</button>
-              <button onClick={() => handleDeleteService(srv.id)} className="text-red-600 underline text-sm">Удалить</button>
+            <div className="text-sm">Доступные даты: {srv.availability?.join(", ")}</div>
+            <div className="flex gap-2 mt-2">
+              <button onClick={() => handleEdit(srv)} className="text-blue-600 text-sm underline">Редактировать</button>
+              <button onClick={() => handleDelete(srv.id)} className="text-red-600 text-sm underline">Удалить</button>
             </div>
           </div>
         ))}
