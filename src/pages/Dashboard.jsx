@@ -100,9 +100,10 @@ const Dashboard = () => {
   };
 
   const handleDeleteService = async (id) => {
-    await fetch(\`https://travella-production.up.railway.app/api/providers/services/\${id}\`, {
+    await fetch(`https://travella-production.up.railway.app/api/providers/services/${id}`,
+    {
       method: "DELETE",
-      headers: { Authorization: \`Bearer \${token}\` },
+      headers: { Authorization: `Bearer ${token}` },
     });
     setServices(services.filter((s) => s.id !== id));
   };
