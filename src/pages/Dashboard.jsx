@@ -1,4 +1,6 @@
 
+// src/pages/Dashboard.jsx
+
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import DatePicker from "react-datepicker";
@@ -16,10 +18,10 @@ const Dashboard = () => {
     category: "",
     availability: [],
   });
-  const [editingServiceId, setEditingServiceId] = useState(null);
   const [dateRange, setDateRange] = useState([null, null]);
   const [startDate, endDate] = dateRange;
-  const [editingProvider, setEditingProvider] = useState(false);
+  const [editingServiceId, setEditingServiceId] = useState(null);
+  const [editingProviderField, setEditingProviderField] = useState("");
   const [updatedProvider, setUpdatedProvider] = useState({});
 
   useEffect(() => {
@@ -56,7 +58,8 @@ const Dashboard = () => {
       const dates = [];
       let curr = new Date(startDate);
       while (curr <= endDate) {
-        dates.push(new Date(curr).toISOString().split("T")[0]);
+        const iso = new Date(curr).toISOString().split("T")[0];
+        if (!newService.availability.includes(iso)) dates.push(iso);
         curr.setDate(curr.getDate() + 1);
       }
       setNewService((prev) => ({
@@ -67,69 +70,8 @@ const Dashboard = () => {
     }
   };
 
-  const handleAddService = async () => {
-    const response = await fetch(
-      "https://travella-production.up.railway.app/api/providers/services",
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify(newService),
-      }
-    );
-    const result = await response.json();
-    if (response.ok) {
-      alert("Услуга добавлена");
-      setServices([...services, result.service]);
-      setNewService({ title: "", description: "", price: "", category: "", availability: [] });
-    }
-  };
-
-  const handleDeleteService = async (id) => {
-    await fetch(`https://travella-production.up.railway.app/api/providers/services/${id}`, {
-      method: "DELETE",
-      headers: { Authorization: `Bearer ${token}` },
-    });
-    setServices(services.filter((s) => s.id !== id));
-  };
-
-  const handleEditService = (service) => {
-    setEditingServiceId(service.id);
-    setNewService(service);
-  };
-
-  const handleUpdateService = async () => {
-    const response = await fetch(
-      `https://travella-production.up.railway.app/api/providers/services/${editingServiceId}`,
-      {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify(newService),
-      }
-    );
-    const result = await response.json();
-    if (response.ok) {
-      alert("Услуга обновлена");
-      setServices(
-        services.map((s) => (s.id === editingServiceId ? result.service : s))
-      );
-      setNewService({ title: "", description: "", price: "", category: "", availability: [] });
-      setEditingServiceId(null);
-    }
-  };
-
-  const handleProviderChange = (e) => {
-    const { name, value } = e.target;
-    setUpdatedProvider((prev) => ({ ...prev, [name]: value }));
-  };
-
   const handleUpdateProfile = async () => {
-    const response = await fetch("https://travella-production.up.railway.app/api/providers/profile", {
+    const res = await fetch("https://travella-production.up.railway.app/api/providers/profile", {
       method: "PUT",
       headers: {
         "Content-Type": "application/json",
@@ -137,12 +79,27 @@ const Dashboard = () => {
       },
       body: JSON.stringify(updatedProvider),
     });
-    const data = await response.json();
-    if (response.ok) {
-      alert("Профиль обновлён");
+    const data = await res.json();
+    if (res.ok) {
       setProvider(data);
-      setEditingProvider(false);
+      setEditingProviderField("");
+      alert("Профиль обновлён");
     }
+  };
+
+  const toggleDate = (date) => {
+    const iso = new Date(date).toISOString().split("T")[0];
+    setNewService((prev) => ({
+      ...prev,
+      availability: prev.availability.includes(iso)
+        ? prev.availability.filter((d) => d !== iso)
+        : [...prev.availability, iso],
+    }));
+  };
+
+  const isDateSelected = (date) => {
+    const iso = new Date(date).toISOString().split("T")[0];
+    return newService.availability.includes(iso);
   };
 
   if (!provider) return <div>Загрузка...</div>;
@@ -154,68 +111,52 @@ const Dashboard = () => {
         {provider.images?.[0] && (
           <img src={provider.images[0]} alt="Фото" className="w-32 h-32 rounded-full object-cover mx-auto" />
         )}
-        {editingProvider ? (
-          <div className="space-y-2">
-            <input name="name" value={updatedProvider.name || ""} onChange={handleProviderChange} className="w-full border p-2 rounded" />
-            <input name="languages" value={updatedProvider.languages || ""} onChange={handleProviderChange} className="w-full border p-2 rounded" />
-            <input name="type" value={updatedProvider.type || ""} onChange={handleProviderChange} className="w-full border p-2 rounded" />
-            <input name="location" value={updatedProvider.location || ""} onChange={handleProviderChange} className="w-full border p-2 rounded" />
-            <button onClick={handleUpdateProfile} className="bg-blue-500 text-white px-4 py-2 rounded">Сохранить</button>
+        {["name", "languages", "location", "password"].map((field) => (
+          <div key={field}>
+            <label className="block font-medium capitalize">{field}:</label>
+            {editingProviderField === field ? (
+              <input
+                name={field}
+                value={updatedProvider[field] || ""}
+                onChange={(e) => setUpdatedProvider((p) => ({ ...p, [field]: e.target.value }))}
+                onBlur={handleUpdateProfile}
+                className="w-full p-2 border rounded"
+              />
+            ) : (
+              <div>
+                <span>{provider[field]}</span>
+                <button onClick={() => setEditingProviderField(field)} className="ml-2 text-blue-600 text-sm">✏️</button>
+              </div>
+            )}
           </div>
-        ) : (
-          <>
-            <div className="text-center text-xl font-bold">{provider.name}</div>
-            <div className="text-center text-gray-600">
-              {Array.isArray(provider.languages) ? provider.languages.join(", ") : provider.languages}
-            </div>
-            <div>Тип: {provider.type}</div>
-            <div>Локация: {provider.location}</div>
-            <div>Email: {provider.email}</div>
-            <button onClick={() => setEditingProvider(true)} className="mt-2 text-blue-500 underline">Редактировать</button>
-          </>
-        )}
+        ))}
       </div>
 
       <div className="w-full md:w-2/3 bg-white p-6 rounded-xl shadow">
-        <h2 className="text-xl font-bold mb-4">
-          {editingServiceId ? "Редактировать услугу" : "Добавить услугу"}
-        </h2>
-        <input name="title" placeholder="Заголовок" value={newService.title} onChange={handleServiceChange} className="w-full mb-2 p-2 border rounded" />
-        <input name="description" placeholder="Описание" value={newService.description} onChange={handleServiceChange} className="w-full mb-2 p-2 border rounded" />
-        <input name="price" placeholder="Цена" value={newService.price} onChange={handleServiceChange} className="w-full mb-2 p-2 border rounded" />
-        <input name="category" placeholder="Категория" value={newService.category} onChange={handleServiceChange} className="w-full mb-2 p-2 border rounded" />
-        <DatePicker
-          selectsRange
-          startDate={startDate}
-          endDate={endDate}
-          onChange={(update) => setDateRange(update)}
-          isClearable
-          inline
-        />
-        <button onClick={handleAddAvailability} className="mt-2 bg-gray-600 text-white px-3 py-1 rounded">
-          Добавить даты
-        </button>
-        <div className="text-sm text-gray-600 mt-2">
-          Выбрано: {Array.isArray(newService.availability) ? newService.availability.join(", ") : ""}
-        </div>
-        <button
-          onClick={editingServiceId ? handleUpdateService : handleAddService}
-          className="bg-primary text-white px-4 py-2 rounded mt-4"
-        >
-          {editingServiceId ? "Сохранить изменения" : "Сохранить услугу"}
-        </button>
-
-        <hr className="my-6" />
-        <h2 className="text-xl font-bold mb-2">Мои услуги</h2>
-        {services.map((srv) => (
-          <div key={srv.id} className="border p-3 rounded mb-2">
-            <div><strong>{srv.title}</strong> — {srv.price} сум</div>
-            <div className="text-sm text-gray-500">Категория: {srv.category}</div>
-            <div className="text-sm text-gray-500">Даты: {Array.isArray(srv.availability) ? srv.availability.join(", ") : srv.availability}</div>
-            <button onClick={() => handleEditService(srv)} className="text-blue-500 text-sm mr-3">✏️ Редактировать</button>
-            <button onClick={() => handleDeleteService(srv.id)} className="text-red-500 text-sm">🗑 Удалить</button>
-          </div>
+        <h2 className="text-xl font-bold mb-4">Добавить услугу</h2>
+        {["title", "description", "price", "category"].map((field) => (
+          <input
+            key={field}
+            name={field}
+            placeholder={field}
+            value={newService[field]}
+            onChange={handleServiceChange}
+            className="w-full mb-2 p-2 border rounded"
+          />
         ))}
+
+        <label className="block font-medium mb-1">Доступные даты:</label>
+        <DatePicker
+          inline
+          highlightDates={newService.availability.map((d) => new Date(d))}
+          dayClassName={(d) => isDateSelected(d) ? "bg-blue-200 rounded-full" : undefined}
+          onDayClick={toggleDate}
+        />
+
+        <div className="text-sm text-gray-600 mt-2">
+          Выбрано: {newService.availability.join(", ")}
+        </div>
+        <button onClick={() => alert("Реализация сохранения")} className="mt-4 bg-primary text-white px-4 py-2 rounded">Сохранить</button>
       </div>
     </div>
   );
