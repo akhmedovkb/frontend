@@ -26,7 +26,7 @@ const Dashboard = () => {
     if (!token) return navigate("/login");
 
     fetch("https://travella-production.up.railway.app/api/providers/profile", {
-      headers: { Authorization: Bearer ${token} },
+      headers: { Authorization: Bearer }{token} },
     })
       .then((res) => res.json())
       .then((data) => {
