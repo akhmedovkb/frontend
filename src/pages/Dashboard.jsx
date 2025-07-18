@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import DatePicker from "react-datepicker";
@@ -50,7 +51,10 @@ const Dashboard = () => {
       const dates = [];
       let curr = new Date(startDate);
       while (curr <= endDate) {
-        dates.push(new Date(curr).toISOString().split("T")[0]);
+        const dateStr = new Date(curr).toISOString().split("T")[0];
+        if (!newService.availability.includes(dateStr)) {
+          dates.push(dateStr);
+        }
         curr.setDate(curr.getDate() + 1);
       }
       setNewService((prev) => ({
@@ -61,24 +65,29 @@ const Dashboard = () => {
     }
   };
 
-  const handleSubmitService = async () => {
-    const url = editingServiceId
-      ? `https://travella-production.up.railway.app/api/providers/services/${editingServiceId}`
-      : "https://travella-production.up.railway.app/api/providers/services";
-    const method = editingServiceId ? "PUT" : "POST";
+  const handleEditService = (service) => {
+    setEditingServiceId(service.id);
+    setNewService(service);
+  };
 
-    const response = await fetch(url, {
-      method,
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`,
-      },
-      body: JSON.stringify(newService),
-    });
-
+  const handleUpdateService = async () => {
+    const response = await fetch(
+      \`https://travella-production.up.railway.app/api/providers/services/\${editingServiceId}\`,
+      {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: \`Bearer \${token}\`,
+        },
+        body: JSON.stringify(newService),
+      }
+    );
     const result = await response.json();
     if (response.ok) {
-      alert(result.message || "Успешно");
+      alert("Услуга обновлена");
+      setServices(
+        services.map((s) => (s.id === editingServiceId ? result.service : s))
+      );
       setNewService({
         title: "",
         description: "",
@@ -87,92 +96,42 @@ const Dashboard = () => {
         availability: [],
       });
       setEditingServiceId(null);
-
-      fetch("https://travella-production.up.railway.app/api/providers/services", {
-        headers: { Authorization: `Bearer ${token}` },
-      })
-        .then((res) => res.json())
-        .then((data) => setServices(data));
-    } else {
-      alert(result.error || "Ошибка");
     }
   };
 
-  const handleEdit = (service) => {
-    setEditingServiceId(service.id);
-    setNewService({ ...service });
+  const handleDeleteService = async (id) => {
+    await fetch(\`https://travella-production.up.railway.app/api/providers/services/\${id}\`, {
+      method: "DELETE",
+      headers: { Authorization: \`Bearer \${token}\` },
+    });
+    setServices(services.filter((s) => s.id !== id));
   };
-
-  const handleDelete = async (id) => {
-    const confirmed = window.confirm("Удалить эту услугу?");
-    if (!confirmed) return;
-
-    const response = await fetch(
-      `https://travella-production.up.railway.app/api/providers/services/${id}`,
-      {
-        method: "DELETE",
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      }
-    );
-    if (response.ok) {
-      setServices(services.filter((srv) => srv.id !== id));
-    } else {
-      alert("Ошибка при удалении");
-    }
-  };
-
-  if (!provider) return <div className="p-6">Загрузка...</div>;
 
   return (
-    <div className="flex flex-col md:flex-row max-w-7xl mx-auto p-6 gap-6">
-      {/* Профиль */}
-      <div className="w-full md:w-1/3 bg-white rounded-xl shadow p-6 space-y-4">
-        <button onClick={handleLogout} className="text-sm text-red-600 underline mb-4">
-          Выйти
-        </button>
-        {provider.images?.[0] && (
-          <img src={provider.images[0]} alt="Фото" className="w-32 h-32 rounded-full object-cover mx-auto" />
-        )}
-        <div className="text-center font-bold text-xl">{provider.name}</div>
-        <div className="text-center text-gray-500">
-          {Array.isArray(provider.languages) ? provider.languages.join(", ") : ""}
+    <div className="p-6 max-w-5xl mx-auto">
+      <button onClick={handleLogout} className="mb-4 text-red-500 underline">Выйти</button>
+      <h2 className="text-xl font-bold">{editingServiceId ? "Редактировать услугу" : "Добавить услугу"}</h2>
+      <input name="title" placeholder="Заголовок" value={newService.title} onChange={handleServiceChange} className="w-full border p-2 my-2" />
+      <input name="description" placeholder="Описание" value={newService.description} onChange={handleServiceChange} className="w-full border p-2 my-2" />
+      <input name="price" placeholder="Цена" value={newService.price} onChange={handleServiceChange} className="w-full border p-2 my-2" />
+      <input name="category" placeholder="Категория" value={newService.category} onChange={handleServiceChange} className="w-full border p-2 my-2" />
+      <DatePicker selectsRange startDate={startDate} endDate={endDate} onChange={(update) => setDateRange(update)} inline />
+      <button onClick={handleAddAvailability} className="mt-2 bg-blue-500 text-white px-4 py-1 rounded">Добавить даты</button>
+      <div className="text-sm mt-2 text-gray-600">Выбрано: {newService.availability.join(", ")}</div>
+      <button onClick={editingServiceId ? handleUpdateService : null} className="mt-4 bg-green-600 text-white px-4 py-2 rounded">
+        {editingServiceId ? "Сохранить изменения" : "Добавить"}
+      </button>
+
+      <h3 className="mt-8 text-lg font-semibold">Мои услуги</h3>
+      {services.map((s) => (
+        <div key={s.id} className="border rounded p-4 mt-2">
+          <div><strong>{s.title}</strong> — {s.price} сум</div>
+          <div className="text-sm text-gray-500">Категория: {s.category}</div>
+          <div className="text-sm text-gray-500">Даты: {s.availability?.join(", ")}</div>
+          <button onClick={() => handleEditService(s)} className="text-blue-500 mr-4">✏️ Редактировать</button>
+          <button onClick={() => handleDeleteService(s.id)} className="text-red-500">🗑 Удалить</button>
         </div>
-        <div><strong>Тип:</strong> {provider.type}</div>
-        <div><strong>Локация:</strong> {provider.location}</div>
-        <div><strong>Контакт:</strong> {provider.contact_name} | {provider.phone} | {provider.email}</div>
-        <div><strong>Описание:</strong> {provider.description}</div>
-      </div>
-
-      {/* Услуги */}
-      <div className="w-full md:w-2/3 bg-white rounded-xl shadow p-6">
-        <h2 className="text-xl font-bold mb-4">{editingServiceId ? "Редактировать услугу" : "Добавить услугу"}</h2>
-        <input name="title" placeholder="Заголовок" value={newService.title} onChange={handleServiceChange} className="w-full mb-2 p-2 border rounded" />
-        <input name="description" placeholder="Описание" value={newService.description} onChange={handleServiceChange} className="w-full mb-2 p-2 border rounded" />
-        <input name="price" placeholder="Цена" value={newService.price} onChange={handleServiceChange} className="w-full mb-2 p-2 border rounded" />
-        <input name="category" placeholder="Категория" value={newService.category} onChange={handleServiceChange} className="w-full mb-2 p-2 border rounded" />
-        <DatePicker selectsRange startDate={startDate} endDate={endDate} onChange={(update) => setDateRange(update)} isClearable inline />
-        <button onClick={handleAddAvailability} className="mt-2 bg-blue-500 text-white px-3 py-1 rounded">Добавить даты</button>
-        <div className="text-sm mt-2 text-gray-600">Выбрано: {newService.availability?.join(", ")}</div>
-        <button onClick={handleSubmitService} className="bg-primary text-white px-4 py-2 rounded mt-4">
-          {editingServiceId ? "Сохранить изменения" : "Добавить услугу"}
-        </button>
-
-        <hr className="my-6" />
-        <h2 className="text-xl font-bold mb-2">Мои услуги</h2>
-        {services.map((srv) => (
-          <div key={srv.id} className="border p-3 rounded mb-2">
-            <div><strong>{srv.title}</strong> — {srv.price} сум</div>
-            <div className="text-sm">Категория: {srv.category}</div>
-            <div className="text-sm">Доступные даты: {srv.availability?.join(", ")}</div>
-            <div className="mt-2 flex gap-2">
-              <button onClick={() => handleEdit(srv)} className="text-blue-600 text-sm underline">Редактировать</button>
-              <button onClick={() => handleDelete(srv.id)} className="text-red-600 text-sm underline">Удалить</button>
-            </div>
-          </div>
-        ))}
-      </div>
+      ))}
     </div>
   );
 };
