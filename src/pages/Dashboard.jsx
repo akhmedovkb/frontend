@@ -56,10 +56,7 @@ const Dashboard = () => {
       const dates = [];
       let curr = new Date(startDate);
       while (curr <= endDate) {
-        const formatted = new Date(curr).toISOString().split("T")[0];
-        if (!newService.availability.includes(formatted)) {
-          dates.push(formatted);
-        }
+        dates.push(new Date(curr).toISOString().split("T")[0]);
         curr.setDate(curr.getDate() + 1);
       }
       setNewService((prev) => ({
@@ -168,7 +165,9 @@ const Dashboard = () => {
         ) : (
           <>
             <div className="text-center text-xl font-bold">{provider.name}</div>
-            <div className="text-center text-gray-600">{provider.languages?.join(", ")}</div>
+            <div className="text-center text-gray-600">
+              {Array.isArray(provider.languages) ? provider.languages.join(", ") : provider.languages}
+            </div>
             <div>Тип: {provider.type}</div>
             <div>Локация: {provider.location}</div>
             <div>Email: {provider.email}</div>
@@ -197,7 +196,7 @@ const Dashboard = () => {
           Добавить даты
         </button>
         <div className="text-sm text-gray-600 mt-2">
-          Выбрано: {newService.availability.join(", ")}
+          Выбрано: {Array.isArray(newService.availability) ? newService.availability.join(", ") : ""}
         </div>
         <button
           onClick={editingServiceId ? handleUpdateService : handleAddService}
@@ -212,7 +211,7 @@ const Dashboard = () => {
           <div key={srv.id} className="border p-3 rounded mb-2">
             <div><strong>{srv.title}</strong> — {srv.price} сум</div>
             <div className="text-sm text-gray-500">Категория: {srv.category}</div>
-            <div className="text-sm text-gray-500">Даты: {srv.availability?.join(", ")}</div>
+            <div className="text-sm text-gray-500">Даты: {Array.isArray(srv.availability) ? srv.availability.join(", ") : srv.availability}</div>
             <button onClick={() => handleEditService(srv)} className="text-blue-500 text-sm mr-3">✏️ Редактировать</button>
             <button onClick={() => handleDeleteService(srv.id)} className="text-red-500 text-sm">🗑 Удалить</button>
           </div>
