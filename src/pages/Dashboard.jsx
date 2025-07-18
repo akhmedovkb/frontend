@@ -72,12 +72,12 @@ const Dashboard = () => {
 
   const handleUpdateService = async () => {
     const response = await fetch(
-      \`https://travella-production.up.railway.app/api/providers/services/\${editingServiceId}\`,
+      `https://travella-production.up.railway.app/api/providers/services/${editingServiceId}`,
       {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
-          Authorization: \`Bearer \${token}\`,
+          Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify(newService),
       }
